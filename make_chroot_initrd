@@ -5,6 +5,7 @@ usage()
     echo "Usage: make_chroot_initrd [-o initrd.chroot] current_initrd"
     echo "  Make new initrd image supporting chroot= boot parameter from existing image."
     echo "  New image is written to 'current_initrd.chroot' unless -o is specified (no need to run as root then)."
+    echo "  Supported Systems: debian, ubuntu and derivatives."
     exit 1
 }
 
@@ -15,27 +16,36 @@ if [ "$1" = "-o" ]; then
     shift; out="$1"; shift
 fi
 
+# create temp dir
+cwd=`pwd`
+tmp="/tmp/make_chroot_initrd"
+rm -rf "$tmp" 2>/dev/null
+mkdir $tmp || die "can't create dir $tmp"
+
+# check input file
 initrd="$1"
 [ -f "$initrd" ] || usage
 file "$initrd" | grep -q 'gzip compressed data' || die "expecting a gzipped initrd"
-
 [ -z "$out" ] && out="${initrd}.chroot"
-echo "making new initrd: $out"
 
-cwd=`pwd`
-tmp="/tmp/patch_initrd"
-rm -rf "$tmp" 2>/dev/null
-mkdir $tmp
+# script home dir
+[ -f "$cwd/make_chroot_initrd" ]         && script_dir="$cwd"
+[ -f "`dirname $0`/make_chroot_initrd" ] && script_dir="`dirname $0`"
+[ -f "$script_dir/initrd.patch" ] || die "initrd.patch is missing"
+
+echo "making new initrd: $out"
+cp "$initrd" "$tmp/initrd.gz"
 cd $tmp || die "can't access $tmp"
 
-cp "$initrd" "initrd.gz"
 echo "extracting"
-gunzip initrd.gz		|| die "gunzip failed"
+gunzip initrd.gz			|| die "gunzip failed"
 mkdir tmp; cd tmp
 cpio --quiet -i < ../initrd		|| die "cpio failed"
+
 echo "patching"
-patch --silent -p1 < $cwd/initrd.patch	|| die "patch failed !"
+patch --silent -p1 < "$script_dir/initrd.patch"	|| die "patch failed !"
 rm *.orig */*.orig 2>/dev/null
+
 echo "packing"
 find . | cpio --quiet -o --format='newc' > ../initrd
 cd ..

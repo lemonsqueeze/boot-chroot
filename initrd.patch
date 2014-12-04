@@ -1,15 +1,15 @@
 diff -Nru orig/init new/init
 --- orig/init	2014-12-04 11:42:27.000000000 +0100
-+++ new/init	2014-12-04 11:45:08.000000000 +0100
-@@ -137,6 +137,9 @@
- 	loopfstype=*)
- 		LOOPFSTYPE="${x#loopfstype=}"
++++ new/init	2014-12-04 17:24:18.000000000 +0100
+@@ -149,6 +149,9 @@
+ 	ip=*)
+ 		IP="${x#ip=}"
  		;;
 +	chroot=*)
 +		CHROOT="${x#chroot=}"
 +		;;
- 	cryptopts=*)
- 		cryptopts="${x#cryptopts=}"
+ 	boot=*)
+ 		BOOT=${x#boot=}
  		;;
 diff -Nru orig/scripts/local new/scripts/local
 --- orig/scripts/local	2014-12-04 11:42:27.000000000 +0100
