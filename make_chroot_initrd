@@ -1,0 +1,47 @@
+#!/bin/bash
+
+usage()
+{
+    echo "Usage: make_chroot_initrd [-o initrd.chroot] current_initrd"
+    echo "  Make new initrd image supporting chroot= boot parameter from existing image."
+    echo "  New image is written to 'current_initrd.chroot' unless -o is specified (no need to run as root then)."
+    exit 1
+}
+
+die() { echo -e "make_chroot_initrd: $@"; exit 1; }
+
+out=""
+if [ "$1" = "-o" ]; then
+    shift; out="$1"; shift
+fi
+
+initrd="$1"
+[ -f "$initrd" ] || usage
+file "$initrd" | grep -q 'gzip compressed data' || die "expecting a gzipped initrd"
+
+[ -z "$out" ] && out="${initrd}.chroot"
+echo "making new initrd: $out"
+
+cwd=`pwd`
+tmp="/tmp/patch_initrd"
+rm -rf "$tmp" 2>/dev/null
+mkdir $tmp
+cd $tmp || die "can't access $tmp"
+
+cp "$initrd" "initrd.gz"
+echo "extracting"
+gunzip initrd.gz		|| die "gunzip failed"
+mkdir tmp; cd tmp
+cpio --quiet -i < ../initrd		|| die "cpio failed"
+echo "patching"
+patch --silent -p1 < $cwd/initrd.patch	|| die "patch failed !"
+rm *.orig */*.orig 2>/dev/null
+echo "packing"
+find . | cpio --quiet -o --format='newc' > ../initrd
+cd ..
+gzip initrd
+
+cd "$cwd"				|| die "cd $cwd failed"
+cp $tmp/initrd.gz "$out"		|| die "now run \n    sudo cp $tmp/initrd.gz $out"
+rm -rf $tmp
+echo "done !"

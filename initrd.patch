@@ -1,0 +1,54 @@
+diff -Nru orig/init new/init
+--- orig/init	2014-12-04 11:42:27.000000000 +0100
++++ new/init	2014-12-04 11:45:08.000000000 +0100
+@@ -137,6 +137,9 @@
+ 	loopfstype=*)
+ 		LOOPFSTYPE="${x#loopfstype=}"
+ 		;;
++	chroot=*)
++		CHROOT="${x#chroot=}"
++		;;
+ 	cryptopts=*)
+ 		cryptopts="${x#cryptopts=}"
+ 		;;
+diff -Nru orig/scripts/local new/scripts/local
+--- orig/scripts/local	2014-12-04 11:42:27.000000000 +0100
++++ new/scripts/local	2014-12-04 11:45:23.000000000 +0100
+@@ -150,6 +150,37 @@
+ 		fi
+ 	fi
+ 
++	if [ "$CHROOT" ]; then
++		if [ "$mountroot_status" != 0 ]; then
++			if [ ${FSTYPE} = ntfs ] || [ ${FSTYPE} = vfat ]; then
++				panic "
++Could not mount the partition ${ROOT}.
++This could also happen if the file system is not clean because of an operating
++system crash, an interrupted boot process, an improper shutdown, or unplugging
++of a removable device without first unmounting or ejecting it.  To fix this,
++simply reboot into Windows, let it fully start, log in, run 'chkdsk /r', then
++gracefully shut down and reboot back into Windows. After this you should be
++able to reboot again and resume the installation.
++(filesystem = ${FSTYPE}, error code = $mountroot_status)
++"
++			fi
++		fi
++	
++		mkdir -p /host
++		mount -o move ${rootmnt} /host
++
++		if [ ! -d "/host/${CHROOT}" ]; then
++			panic "ALERT!  /host/${CHROOT} does not exist.  Dropping to a shell!"
++		fi
++
++		# FIXME This has no error checking
++		mount --bind "/host/${CHROOT}" ${rootmnt}
++
++		if [ -d ${rootmnt}/host ]; then
++			mount -o move /host ${rootmnt}/host
++		fi
++	fi
++
+ 	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/local-bottom"
+ 	run_scripts /scripts/local-bottom
+ 	[ "$quiet" != "y" ] && log_end_msg
