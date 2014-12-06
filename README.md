@@ -10,7 +10,7 @@ Boot debian/ubuntu based distributions installed in a chroot.
 
 **Option 2:** use this:
 
-Run `make_chroot_initrd` script to create a new chroot-enabled initrd image from your existing one:
+Run `make_chroot_initrd` script to create a new chroot-enabled initrd image from the existing one:
 
     #  ./make_chroot_initrd /chroot/trusty/boot/initrd.img-3.13.0-32-generic
     making new initrd: /chroot/trusty/boot/initrd.img-3.13.0-32-generic.chroot
@@ -21,7 +21,7 @@ Run `make_chroot_initrd` script to create a new chroot-enabled initrd image from
 
 The new image will be exactly the same, except now it can handle a `chroot=` boot parameter.
 
-With grub2 as bootloader you can add an entry to your `/boot/grub/grub.cfg`:  
+With grub2 as bootloader you can add an entry to `/boot/grub/grub.cfg`:  
 (or perhaps better `/etc/grub.d/40_custom`)
 
     menuentry "ubuntu trusty, (linux 3.13.0-32) (chroot)" {
@@ -36,15 +36,31 @@ With grub2 as bootloader you can add an entry to your `/boot/grub/grub.cfg`:
 
 Done !
 
+System-wide install
+-------------------
+
+Once you're happy with it you can make the changes permanent  
+(until initramfs-tools package gets upgraded).  
+In the chrooted system:
+
+    # cd /usr/share/initramfs-tools
+    # cp -pdrv .  ../initramfs-tools.orig	# backup
+    # patch -p1 < path_to/boot_chroot/initrd.patch
+    # rm *.orig */*.orig
+    # update-initramfs -u
+
+From now on regular initrd image will support chroot booting.  
+No need to use a separate initrd.chroot which may get out of sync with it then.
+
 
 Notes
 -----
 
-Once the initrd is done loading we're chrooted of course. Original partition is still available under `/host` if directory exists.
+Tested so far on Ubuntu (precise, trusty) and Debian (wheezy).
 
-Tested so far: Ubuntu (precise, trusty), Debian (wheezy)  
+Once the initrd is done loading we're chrooted of course. Original partition is still available under `/host` if such directory exists.
 
-Same approach should work for any linux distribution. The patch used by `make_chroot_initrd` will probably fail if the init scripts are too different, but it shouldn't be too hard to adapt.
+Same approach should work for any linux distribution. The patch used by `make_chroot_initrd` will probably fail if the init scripts are too different, but shouldn't be too hard to adapt.
 
 Why not use a loop mounted image instead of a chroot ?  
 It's a lot more efficient cache & io-wise (unless using ploop)
