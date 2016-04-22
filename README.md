@@ -49,6 +49,8 @@ In the chrooted system:
     # rm *.orig */*.orig
     # update-initramfs -u
 
+If `initrd.patch` does not work, especially for Ubuntu 16.04+,
+please use `path_to/boot_chroot/initrd_1604.patch`.
 From now on regular initrd image will support chroot booting.  
 No need to use a separate initrd.chroot which may get out of sync with it then.
 
