@@ -1,0 +1,54 @@
+--- orig/init	2016-04-15 22:43:37.000000000 +0200
++++ new/init	2016-04-22 22:20:50.222316143 +0200
+@@ -125,6 +125,9 @@
+ 	ip=*)
+ 		IP="${x#ip=}"
+ 		;;
++	chroot=*)
++		CHROOT="${x#chroot=}"
++		;;
+ 	boot=*)
+ 		BOOT=${x#boot=}
+ 		;;
+--- orig/scripts/local	2016-02-21 22:22:01.000000000 +0100
++++ new/scripts/local	2016-04-22 22:22:20.729032969 +0200
+@@ -159,6 +159,39 @@
+ 	# Mount root
+ 	mount ${roflag} ${FSTYPE:+-t ${FSTYPE} }${ROOTFLAGS} ${ROOT} ${rootmnt}
+ 	mountroot_status="$?"
++
++	# CHROOT support
++	if [ "$CHROOT" ]; then
++		if [ "$mountroot_status" != 0 ]; then
++			if [ ${FSTYPE} = ntfs ] || [ ${FSTYPE} = vfat ]; then
++				panic "
++Could not mount the partition ${ROOT}.
++This could also happen if the file system is not clean because of an operating
++system crash, an interrupted boot process, an improper shutdown, or unplugging
++of a removable device without first unmounting or ejecting it.  To fix this,
++simply reboot into Windows, let it fully start, log in, run 'chkdsk /r', then
++gracefully shut down and reboot back into Windows. After this you should be
++able to reboot again and resume the installation.
++(filesystem = ${FSTYPE}, error code = $mountroot_status)
++"
++			fi
++		fi
++	
++		mkdir -p /host
++		mount -o move ${rootmnt} /host
++
++		if [ ! -d "/host/${CHROOT}" ]; then
++			panic "ALERT!  /host/${CHROOT} does not exist.  Dropping to a shell!"
++		fi
++
++		# FIXME This has no error checking
++		mount --bind "/host/${CHROOT}" ${rootmnt}
++
++		if [ -d ${rootmnt}/host ]; then
++			mount -o move /host ${rootmnt}/host
++		fi
++	fi
++
+ 	if [ "$LOOP" ]; then
+ 		if [ "$mountroot_status" != 0 ]; then
+ 			if [ ${FSTYPE} = ntfs ] || [ ${FSTYPE} = vfat ]; then
