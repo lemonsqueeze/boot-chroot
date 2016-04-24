@@ -43,7 +43,9 @@ mkdir tmp; cd tmp
 cpio --quiet -i < ../initrd		|| die "cpio failed"
 
 echo "patching"
-patch --silent -p1 < "$script_dir/initrd.patch"	|| die "patch failed !"
+patch --silent --dry-run -p1 < "$script_dir/initrd.patch" >/dev/null && \
+patch --silent -p1 < "$script_dir/initrd.patch"	|| \
+patch --silent -p1 < "$script_dir/initrd_1604.patch" || die "patch failed !"
 rm *.orig */*.orig 2>/dev/null
 
 echo "packing"
