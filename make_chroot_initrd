@@ -30,7 +30,6 @@ file "$initrd" | grep -q 'gzip compressed data' || die "expecting a gzipped init
 
 # script home dir
 [ -f "$cwd/make_chroot_initrd" ]         && script_dir="$cwd"
-[ -f "`dirname $0`/make_chroot_initrd" ] && script_dir="`dirname $0`"
 [ -f "$script_dir/initrd.patch" ] || die "initrd.patch is missing"
 
 echo "making new initrd: $out"
